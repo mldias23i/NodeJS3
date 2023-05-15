@@ -15,7 +15,7 @@
     "nodemon": "^2.0.22"
   },
   "engines": {
-    "node": ">=16 <17"
+    "node": "19.8.1"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
