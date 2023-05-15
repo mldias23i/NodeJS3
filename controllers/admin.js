@@ -1,8 +1,10 @@
-const Product = require('../models/product');
-const { validationResult } = require('express-validator');
+const mongoose = require('mongoose');
+
 const fileHelper = require('../util/file');
 
-const mongoose = require('mongoose');
+const { validationResult } = require('express-validator');
+
+const Product = require('../models/product');
 
 const ITEMS_PER_PAGE = 2;
 
