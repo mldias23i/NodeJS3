@@ -12,6 +12,9 @@
   "author": "Miguel",
   "license": "ISC",
   "devDependencies": {
+    "@types/stripe": "^8.0.417",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
     "nodemon": "^2.0.22"
   },
   "engines": {
@@ -42,6 +45,6 @@
     "pdfkit": "^0.13.0",
     "pug": "^3.0.2",
     "sequelize": "^6.31.0",
-    "stripe": "^7.11.0"
+    "stripe": "^12.5.0"
   }
 }
