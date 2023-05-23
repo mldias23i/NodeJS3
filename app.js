@@ -74,6 +74,7 @@ app.use(
           scriptSrc: ["'self'", "'unsafe-inline'", 'https://js.stripe.com'],
           frameSrc: ["'self'", 'https://js.stripe.com'],
           scriptSrcAttr: ["'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https://nodejsimagestorage.s3.eu-west-3.amazonaws.com"],
         },
       },
     })
