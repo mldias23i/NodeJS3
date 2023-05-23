@@ -8,6 +8,20 @@ const Product = require('../models/product');
 
 const ITEMS_PER_PAGE = 2;
 
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+
+const fs = require('fs');
+const { Readable } = require('stream');
+
+// Configure AWS S3
+const s3 = new S3Client({
+    region: 'eu-west-3',
+    credentials: {
+        accessKeyId: (process.env.AWS_KEY),
+        secretAccessKey: (process.env.AWS_KEY_SECRET)
+    }
+});
+
 // Getting information about product
 exports.getAddProduct = (req, res, next) => {
     res.render('admin/edit-product', {
@@ -61,6 +75,20 @@ exports.postAddProduct = (req, res, next) => {
             validationErrors: errors.array()
         });
     }
+
+    const uploadParams = {
+        Bucket: 'nodejsimagestorage',
+        Key: imageUrl.toString(),
+        //Key: new Date().toISOString().replace(/:/g, '-') + '-' + image.originalname,
+        Body: fs.createReadStream(image.path)
+    };  
+
+    s3.send(new PutObjectCommand(uploadParams))
+        .then(data => {
+            console.log('File uploaded successfully:');
+        });
+
+
     const product = new Product({
         title: title, 
         price:price, 
@@ -97,7 +125,7 @@ exports.postAddProduct = (req, res, next) => {
 };
 
 //Getting a list of all products in database
-exports.getProducts = (req, res, next) => {
+/* exports.getProducts = (req, res, next) => {
     const page = +req.query.page || 1;
     let totalItems;
 
@@ -125,7 +153,7 @@ exports.getProducts = (req, res, next) => {
         const error = new Error(err);
         error.httpStatusCode = 500;
         return next(error);
-    });
+    }); */
 
     
    // Product.find({userId: req.user._id})
@@ -144,6 +172,68 @@ exports.getProducts = (req, res, next) => {
         error.httpStatusCode = 500;
         return next(error);
     });*/
+//};
+
+exports.getProducts = (req, res, next) => {
+    const page = +req.query.page || 1;
+    let totalItems;
+  
+    Product.find({ userId: req.user._id })
+      .countDocuments()
+      .then((numProducts) => {
+        totalItems = numProducts;
+        return Product.find({ userId: req.user._id })
+          .skip((page - 1) * ITEMS_PER_PAGE)
+          .limit(ITEMS_PER_PAGE);
+      })
+      .then((products) => {
+        const productPromises = products.map((product) => {
+          const params = {
+            Bucket: 'nodejsimagestorage',
+            Key: product.imageUrl
+          };
+
+          return s3.send(new GetObjectCommand(params))
+            .then(data => {
+                if (data.Body instanceof Readable) {
+                    const chunks = [];
+                    data.Body.on('data', chunk => chunks.push(chunk));
+                    data.Body.on('end', () => {
+                      const imageBuffer = Buffer.concat(chunks);
+                      const base64Image = imageBuffer.toString('base64');
+                      product.imageUrl = base64Image;
+                    });
+                  } else {
+                    console.log('Invalid image data');
+                  }
+              return product;
+            }).catch(error => {
+              // Handle error if unable to fetch image from S3
+              console.log('Error fetching image from S3:', error);
+              return product;
+            });
+        });
+  
+        return Promise.all(productPromises);
+      })
+      .then((productsWithImages) => {
+        res.render('admin/products', {
+          prods: productsWithImages,
+          pageTitle: 'Admin Products',
+          path: '/admin/products',
+          currentPage: page,
+          hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+          hasPreviousPage: page > 1,
+          nextPage: page + 1,
+          previousPage: page - 1,
+          lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
+        });
+      })
+      .catch((err) => {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+      });
 };
 
 // Getting information about a product to alter

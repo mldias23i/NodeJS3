@@ -21,7 +21,8 @@
     "node": "19.8.1"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.332.0",
+    "@aws-sdk/client-s3": "^3.335.0",
+    "aws-sdk": "^2.1381.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "compression": "^1.7.4",

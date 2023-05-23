@@ -9,6 +9,19 @@ const Order = require('../models/order');
 
 const ITEMS_PER_PAGE = 2;
 
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+
+const { Readable } = require('stream');
+
+// Configure AWS S3
+const s3 = new S3Client({
+    region: 'eu-west-3',
+    credentials: {
+        accessKeyId: (process.env.AWS_KEY),
+        secretAccessKey: (process.env.AWS_KEY_SECRET)
+    }
+});
+
 //Getting a list of all products in database
 exports.getProducts = (req, res, next) => {
     const page = +req.query.page || 1;
@@ -21,18 +34,47 @@ exports.getProducts = (req, res, next) => {
         .limit(ITEMS_PER_PAGE)
     })
     .then(products => {
-        res.render('shop/product-list', {
-            prods: products, 
-            pageTitle: 'Products', 
-            path:'/products',
-            currentPage: page,
-            hasNextPage: ITEMS_PER_PAGE * page < totalItems,
-            hasPreviousPage: page > 1,
-            nextPage: page + 1,
-            previousPage: page - 1,
-            lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
+        const productPromises = products.map((product) => {
+            const params = {
+              Bucket: 'nodejsimagestorage',
+              Key: product.imageUrl
+            };
+  
+            return s3.send(new GetObjectCommand(params))
+            .then(data => {
+                if (data.Body instanceof Readable) {
+                    const chunks = [];
+                    data.Body.on('data', chunk => chunks.push(chunk));
+                    data.Body.on('end', () => {
+                        const imageBuffer = Buffer.concat(chunks);
+                        const base64Image = imageBuffer.toString('base64');
+                        product.imageUrl = base64Image;
+                    });
+                } else {
+                      console.log('Invalid image data');
+                }
+                return product;
+            }).catch(error => {
+                // Handle error if unable to fetch image from S3
+                console.log('Error fetching image from S3:', error);
+                return product;
+            });
         });
+        return Promise.all(productPromises);
     })
+    .then((productsWithImages) => {
+            res.render('shop/product-list', {
+                prods: productsWithImages, 
+                pageTitle: 'Products', 
+                path:'/products',
+                currentPage: page,
+                hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+                hasPreviousPage: page > 1,
+                nextPage: page + 1,
+                previousPage: page - 1,
+                lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
+            });
+        })
     .catch(err => {
         const error = new Error(err);
         error.httpStatusCode = 500;
