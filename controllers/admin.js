@@ -198,22 +198,25 @@ exports.getProducts = (req, res, next) => {
                 if (data.Body instanceof Readable) {
                     const chunks = [];
                     data.Body.on('data', chunk => chunks.push(chunk));
-                    data.Body.on('end', () => {
-                      const imageBuffer = Buffer.concat(chunks);
-                      const base64Image = imageBuffer.toString('base64');
-                      product.base64ImageUrl = base64Image;
+                    return new Promise((resolve, reject) => {
+                        data.Body.on('end', () => {
+                        const imageBuffer = Buffer.concat(chunks);
+                        const base64Image = imageBuffer.toString('base64');
+                        product.base64ImageUrl = base64Image;
+                        resolve(product);
+                        });
+                        data.Body.on('error', reject); // Handle error event
                     });
                   } else {
                     console.log('Invalid image data');
+                    return product;
                   }
-              return product;
             }).catch(error => {
               // Handle error if unable to fetch image from S3
               console.log('Error fetching image from S3:', error);
               return product;
             });
         });
-  
         return Promise.all(productPromises);
       })
       .then((productsWithImages) => {
