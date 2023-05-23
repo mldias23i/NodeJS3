@@ -201,7 +201,7 @@ exports.getProducts = (req, res, next) => {
                     data.Body.on('end', () => {
                       const imageBuffer = Buffer.concat(chunks);
                       const base64Image = imageBuffer.toString('base64');
-                      product.imageUrl = base64Image;
+                      product.base64ImageUrl = base64Image;
                     });
                   } else {
                     console.log('Invalid image data');

@@ -19,6 +19,9 @@ const productSchema = new Schema({
         type: String,
         required: true
     },
+    base64ImageUrl: {
+        type: String
+    },
     userId: {
         type: Schema.Types.ObjectId,
         ref: 'User',
