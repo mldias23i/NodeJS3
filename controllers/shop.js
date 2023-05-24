@@ -45,15 +45,19 @@ exports.getProducts = (req, res, next) => {
                 if (data.Body instanceof Readable) {
                     const chunks = [];
                     data.Body.on('data', chunk => chunks.push(chunk));
-                    data.Body.on('end', () => {
+                    return new Promise((resolve, reject) => {
+                        data.Body.on('end', () => {
                         const imageBuffer = Buffer.concat(chunks);
                         const base64Image = imageBuffer.toString('base64');
-                        product.imageUrl = base64Image;
+                        product.base64ImageUrl = base64Image;
+                        resolve(product);
+                        });
+                        data.Body.on('error', reject); // Handle error event
                     });
                 } else {
                       console.log('Invalid image data');
-                }
-                return product;
+                      return product;
+                  }
             }).catch(error => {
                 // Handle error if unable to fetch image from S3
                 console.log('Error fetching image from S3:', error);
@@ -80,10 +84,56 @@ exports.getProducts = (req, res, next) => {
         error.httpStatusCode = 500;
         return next(error);
     });
-}
+};
 
 //Getting a product in database
- exports.getProduct = (req, res, next) => {
+exports.getProduct = (req, res, next) => {
+    const prodId = req.params.productId;
+    let productData;
+
+    Product.findById(prodId)
+        .then(product => {
+            productData = product;
+
+            const params = {
+                Bucket: 'nodejsimagestorage',
+                Key: product.imageUrl
+            };
+
+            return s3.send(new GetObjectCommand(params));
+        })
+        .then(data => {
+            if (data.Body instanceof Readable) {
+                const chunks = [];
+                data.Body.on('data', chunk => chunks.push(chunk));
+                return new Promise((resolve, reject) => {
+                    data.Body.on('end', () => {
+                        const imageBuffer = Buffer.concat(chunks);
+                        const base64Image = imageBuffer.toString('base64');
+                        productData.base64ImageUrl = base64Image;
+                        resolve(productData);
+                    });
+                    data.Body.on('error', reject);
+                });
+            } else {
+                console.log('Invalid image data');
+                return productData;
+            }
+        })
+        .then(productWithImage => {
+            res.render('shop/product-detail', {
+                product: productWithImage,
+                pageTitle: productWithImage.title,
+                path: '/products'
+            });
+        })
+        .catch(err => {
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
+        });
+};
+ /* exports.getProduct = (req, res, next) => {
     const prodId = req.params.productId;
     Product.findById(prodId)
     .then(product => {
@@ -98,7 +148,7 @@ exports.getProducts = (req, res, next) => {
         error.httpStatusCode = 500;
         return next(error);
     });        
- };
+ }; */
 
  //Getting a list  of all products in database to first page
  exports.getIndex = (req, res, next) => {

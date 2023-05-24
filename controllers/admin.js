@@ -208,13 +208,13 @@ exports.getProducts = (req, res, next) => {
                         data.Body.on('error', reject); // Handle error event
                     });
                   } else {
-                    console.log('Invalid image data');
-                    return product;
+                        console.log('Invalid image data');
+                        return product;
                   }
             }).catch(error => {
-              // Handle error if unable to fetch image from S3
-              console.log('Error fetching image from S3:', error);
-              return product;
+                // Handle error if unable to fetch image from S3
+                console.log('Error fetching image from S3:', error);
+                return product;
             });
         });
         return Promise.all(productPromises);
@@ -304,13 +304,41 @@ exports.getEditProduct = (req, res, next) => {
         product.description = updatedDesc;
         if(image) {
             fileHelper.deleteFile(product.imageUrl);
-            product.imageUrl = image.path;
+            //product.imageUrl = image.path;
+
+            const fileName = new Date().toISOString().replace(/:/g, '-') + '-' + image.originalname;
+            const fileKey = `images/${fileName}`;
+
+             // Upload new image to AWS S3
+             const uploadParams = {
+                Bucket: 'nodejsimagestorage',
+                Key: fileKey,
+                Body: fs.createReadStream(image.path)
+            };
+
+            s3.send(new PutObjectCommand(uploadParams))
+                .then(data => {
+                    console.log('File uploaded successfully:', data);
+                    // Update the imageUrl in the database
+                    product.imageUrl = fileKey;
+
+                    // Save the updated product
+                    return product.save();
+                })
+                .catch(err => {
+                    console.log('Error uploading file to S3:', err);
+                    const error = new Error(err);
+                    error.httpStatusCode = 500;
+                    return next(error);
+                });
+        } else {
+            // No new image, save the updated product
+            return product.save();
         }
-        return product.save()
-        .then(result => {
-            console.log('Updated Product!');
-            res.redirect('/admin/products');
-        });
+    })
+    .then(result => {
+        console.log('Updated Product!');
+        res.redirect('/admin/products');
     })
     .catch(err => {
         const error = new Error(err);
