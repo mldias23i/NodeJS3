@@ -3,15 +3,23 @@
 
     <body>
         <%- include('../includes/navigation.ejs') %>
+        <!-- Create a centered main section of the page -->
         <main class="centered">
+             <!-- Display the title of the product -->
             <h1><%= product.title %></h1>
             <hr>
+            <!-- Create a container for the product image -->
             <div class="card__image">
+                <!-- Display the product image with its base64-encoded URL and alt text -->
                 <img src="data:image/jpg;base64,<%= product.base64ImageUrl %>" alt="<%= product.title %>">
             </div>
+            <!-- Display the price of the product -->
             <h2><%= product.price %></h2>
+            <!-- Display the description of the product -->
             <p><%= product.description %></p>
+            <!-- Check if the user is authenticated -->
             <% if (isAuthenticated) { %>
+                <!-- Include the add-to-cart.ejs file and pass the product data to it -->
                 <%- include('../includes/add-to-cart.ejs', {product: product}) %>
             <% } %>
         </main>

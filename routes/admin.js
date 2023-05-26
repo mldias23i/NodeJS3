@@ -1,22 +1,19 @@
 const path = require('path');
-
 const express = require('express');
-
 const adminController = require('../controllers/admin');
 const isAuth = require('../middleware/is-auth');
-
 const { body } = require('express-validator');
 
+// Creating an instance of the Express Router
 const router = express.Router();
 
-// /admin/add-product => GET
+// Handling GET and POST requests with authentication 
 router.get('/add-product', isAuth, adminController.getAddProduct);
 
-// /admin/products => GET
 router.get('/products', isAuth, adminController.getProducts);
 
-// /admin/add-product => POST
 router.post('/add-product', [
+    // Validation checks for the title, price, and description fields
     body('title')
         .isString()
         .isLength({ min: 3 })
@@ -33,6 +30,7 @@ adminController.postAddProduct);
 router.get('/edit-product/:productId', isAuth, adminController.getEditProduct);
 
 router.post('/edit-product', [
+        // Validation checks for the title, price, and description fields
         body('title')
             .isString()
             .isLength({ min: 3 })
@@ -48,4 +46,5 @@ router.post('/edit-product', [
 
 router.delete('/product/:productId', isAuth, adminController.deleteProduct);  
 
-module.exports = router;
+// Exporting the router module
+module.exports = router; 

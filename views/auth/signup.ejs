@@ -7,12 +7,17 @@
    <%- include('../includes/navigation.ejs') %>
 
     <main>
+        <!-- If there is an error message, display it in a user message with the "user-message--error" class -->
         <% if (errorMessage) { %>
             <div class="user-message user-message--error"><%= errorMessage %></div>
         <% } %>
+        <!-- Create a form with the class "login-form" and set the action, method, and novalidate attribute -->
         <form class="login-form" action="/signup" method="POST" novalidate>
             <div class="form-control">
                 <label for="email">E-Mail</label>
+                <!-- Create an input field for the email with the name "email" and id "email".
+                     Apply the "invalid" class if there are validation errors for the email. 
+                     Set the value of the email field to the value of "oldInput.email" -->
                 <input 
                     class="<%= validationErrors.find(e=>e.param === 'email') ? 'invalid' : '' %>"
                     type="email" 
@@ -22,6 +27,9 @@
             </div>
             <div class="form-control">
                 <label for="password">Password</label>
+                <!-- Create an input field for the password with the name "password" and id "password".
+                     Apply the "invalid" class if there are validation errors for the password. 
+                     Set the value of the password field to the value of "oldInput.password" -->
                 <input 
                     class="<%= validationErrors.find(e => e.param === 'password') ? 'invalid' : '' %>" 
                     type="password" 
@@ -31,6 +39,9 @@
             </div>
             <div class="form-control">
                 <label for="confirmPassword">Confirm Password</label>
+                 <!-- Create an input field for confirming the password with the name "confirmPassword" and id "confirmPassword".
+                     Apply the "invalid" class if there are validation errors for the confirm password. 
+                     Set the value of the confirm password field to the value of "oldInput.confirmPassword" -->
                 <input
                     class="<%= validationErrors.find(e => e.param === 'confirmPassword') ? 'invalid' : '' %>" 
                     type="password" 
@@ -38,7 +49,9 @@
                     id="confirmPassword" 
                     value="<%= oldInput.confirmPassword %>">
             </div>
+            <!-- Create a hidden input field for the csrfToken with the value "<%= csrfToken %>" -->
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <!-- Create a button with the class "btn" and type "submit" to submit the form -->
             <button class="btn" type="submit">SignUp</button>
         </form>
     </main>

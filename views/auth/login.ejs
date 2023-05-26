@@ -8,11 +8,14 @@
 
     <main>
         <% if (errorMessage) { %>
+            <!-- Display an error message if it exists -->
             <div class="user-message user-message--error"><%= errorMessage %></div>
         <% } %>
+        <!-- Login form -->
         <form class="login-form" action="/login" method="POST">
             <div class="form-control">
                 <label for="email">E-mail</label>
+                <!-- Input field for email with error validation -->
                 <input 
                     class="<%= validationErrors.find(e => e.param === 'email') ? 'invalid' : '' %>" 
                     type="email" 
@@ -22,6 +25,7 @@
             </div>
             <div class="form-control">
                 <label for="password">Password</label>
+                <!-- Input field for password with error validation -->
                 <input 
                     class="<%= validationErrors.find(e => e.param === 'password') ? 'invalid' : '' %>" 
                     type="password" 
@@ -29,8 +33,11 @@
                     id="password" 
                     value="<%= oldInput.password %>">
             </div>
+            <!-- Hidden input field for CSRF token -->
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <!-- Login button -->
             <button class="btn" type="submit">Login</button>
+            <!-- Reset password button -->
             <a class="btn btn-reset" href="/reset">Reset Password</a>
         </form>
     </main>

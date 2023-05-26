@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-
 const Schema = mongoose.Schema;
 
+// Define the user schema
 const userSchema = new Schema({
     email: {
         type: String,
@@ -23,6 +23,7 @@ const userSchema = new Schema({
     }
 });
 
+// Add a method to the user schema to add a product to the cart
 userSchema.methods.addToCart = function(product) {
     const cartProductIndex = this.cart.items.findIndex(cp => {
         return cp.productId.toString() === product._id.toString();
@@ -47,25 +48,7 @@ userSchema.methods.addToCart = function(product) {
     return this.save();
 }
 
-/* //Getting the cart associated to user
-userSchema.methods.getCart() {
-    const productIds = this.cart.items.map(i => {
-        return i.productId;
-    })
-    return db
-    .collection('products')
-    .find({_id: {$in: productIds}})
-    .toArray()
-    .then(products => {
-        return products.map(p => {
-            return {...p, quantity: this.cart.items.find(i => {
-                return i.productId.toString() === p._id.toString();
-            }).quantity
-        };
-        });
-    });
-} */
-
+// Add a method to the user schema to remove a product from the cart
 userSchema.methods.removeFromCart = function(productId) {
     const updatedCartItems = this.cart.items.filter(item => {
         return item.productId.toString() !== productId.toString();
@@ -74,136 +57,11 @@ userSchema.methods.removeFromCart = function(productId) {
     return this.save();
 }
 
+// Add a method to the user schema to clear the cart
 userSchema.methods.clearCart = function () {
     this.cart = {items: [] };
     return this.save();
 }
 
+// Create and export the User model using the user schema
 module.exports = mongoose.model('User', userSchema);
-/* const getDb = require('../util/database').getDb;
-const mongoDb = require('mongodb');
-
-const ObjectId = mongoDb.ObjectId;
-
-//Creating a type user
-class User {
-    constructor(username, email, cart, id) {
-        this.name = username;
-        this.email = email;
-        this.cart = cart || { items: [] };
-        this._id = id;
-    }
-
-    //Saving user in db users
-    save() {
-        const db = getDb();
-        return db.collection('users').insertOne(this);
-    }
-
-    //Add product to a cart associated to user
-    addToCart(product) {
-        const cartProductIndex = this.cart.items.findIndex(cp => {
-            return cp.productId.toString() === product._id.toString();
-        });
-        let newQuantity = 1;
-        const updatedCartItems = [...this.cart.items];
-        if(cartProductIndex >= 0) {
-            newQuantity = this.cart.items[cartProductIndex].quantity + 1;
-            updatedCartItems[cartProductIndex].quantity = newQuantity;
-        }
-        else {
-            updatedCartItems.push({productId: new ObjectId(product._id), quantity: newQuantity})
-        }
-        const updatedCart = {items: updatedCartItems};
-        const db = getDb();
-        return db
-        .collection('users')
-        .updateOne(
-            {_id: new ObjectId(this._id)}, 
-            {$set: {cart: updatedCart}}
-        );
-    }
-
-    //Getting the cart associated to user
-    getCart() {
-        const db = getDb();
-        const productIds = this.cart.items.map(i => {
-            return i.productId;
-        })
-        return db
-        .collection('products')
-        .find({_id: {$in: productIds}})
-        .toArray()
-        .then(products => {
-            return products.map(p => {
-                return {...p, quantity: this.cart.items.find(i => {
-                    return i.productId.toString() === p._id.toString();
-                }).quantity
-            };
-            });
-        });
-    }
-
-    //Deleting item from cart associated to user
-    deleteItemFromCart(productId) {
-        const updatedCartItems = this.cart.items.filter(item => {
-            return item.productId.toString() !== productId.toString();
-        });
-        const db = getDb();
-        return db
-        .collection('users')
-        .updateOne(
-            {_id: new ObjectId(this._id)}, 
-            {$set: {cart: {items: updatedCartItems}}}
-        );
-    }
-
-    //Adding an order to orders associated with the user
-    addOrder() {
-        const db = getDb();
-        return this.getCart().then(products => {
-            const order = {
-                items: products,
-                user: {
-                    _id: new ObjectId(this._id),
-                    name: this.name,
-                }
-            };
-            return db.collection('orders').insertOne(order);
-        }).then(result => {
-            this.cart = {items: []};
-            return db
-                .collection('users')
-                .updateOne(
-                    {_id: new ObjectId(this._id)}, 
-                    {$set: {cart: {items: []}}}
-                );
-        });
-    }
-
-    //Getting orders from db associated to user
-    getOrders() {
-        const db = getDb();
-        return db
-        .collection('orders')
-        .find({'user._id': new ObjectId(this._id)})
-        .toArray();
-    }
-
-    //Find user in db from user ID
-    static findById(userId) {
-        const db = getDb();
-        return db
-        .collection('users')
-        .findOne({_id: new ObjectId(userId)})
-        .then(user => {
-            console.log(user);
-            return user;
-        })
-        .catch(err => {
-            console.log(err);
-        });
-    }
-}
-
-module.exports = User; */

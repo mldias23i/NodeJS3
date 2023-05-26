@@ -1,15 +1,8 @@
-const mongoose = require('mongoose');
-
 const fileHelper = require('../util/file');
-
 const { validationResult } = require('express-validator');
-
 const Product = require('../models/product');
-
 const ITEMS_PER_PAGE = 4;
-
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
-
 const fs = require('fs');
 const { Readable } = require('stream');
 
@@ -22,7 +15,7 @@ const s3 = new S3Client({
     }
 });
 
-// Getting information about product
+// Render the add product form
 exports.getAddProduct = (req, res, next) => {
     res.render('admin/edit-product', {
         pageTitle: 'Add Product', 
@@ -40,6 +33,8 @@ exports.postAddProduct = (req, res, next) => {
     const image = req.file;
     const price = req.body.price;
     const description = req.body.description;
+
+    // Check if an image is provided
     if(!image) {
         return res.status(422).render('admin/edit-product', {
             pageTitle: 'Add Product', 
@@ -60,6 +55,7 @@ exports.postAddProduct = (req, res, next) => {
 
     const errors = validationResult(req);
 
+     // Check if there are any validation errors
     if(!errors.isEmpty()) {
        return res.status(422).render('admin/edit-product', {
             pageTitle: 'Add Product', 
@@ -79,16 +75,16 @@ exports.postAddProduct = (req, res, next) => {
     const uploadParams = {
         Bucket: 'nodejsimagestorage',
         Key: imageUrl.toString(),
-        //Key: new Date().toISOString().replace(/:/g, '-') + '-' + image.originalname,
         Body: fs.createReadStream(image.path)
     };  
 
+    // Upload the image to the S3 bucket
     s3.send(new PutObjectCommand(uploadParams))
         .then(data => {
             console.log('File uploaded successfully:');
         });
 
-
+    // Create a new product instance
     const product = new Product({
         title: title, 
         price:price, 
@@ -103,87 +99,29 @@ exports.postAddProduct = (req, res, next) => {
         res.redirect('/admin/products');
     })
     .catch(err => {
-        /* return res.status(500).render('admin/edit-product', {
-            pageTitle: 'Add Product', 
-            path: '/admin/add-product',
-            editing: false,
-            hasError: true,
-            product: {
-                title: title,
-                imageUrl: imageUrl,
-                price: price,
-                description: description
-            },
-            errorMessage: 'Database operation failed, please try again.',
-            validationErrors: []
-        }); */
-        //res.redirect('/error500');
         const error = new Error(err);
         error.httpStatusCode = 500;
         return next(error);
     });
 };
 
-//Getting a list of all products in database
-/* exports.getProducts = (req, res, next) => {
-    const page = +req.query.page || 1;
-    let totalItems;
-
-    Product.find({userId: req.user._id})
-    .countDocuments().then(numProducts => {
-        totalItems = numProducts;
-        return Product.find({userId: req.user._id})
-        .skip((page - 1) * ITEMS_PER_PAGE)
-        .limit(ITEMS_PER_PAGE)
-    })
-    .then(products => {
-        res.render('admin/products', {
-            prods: products, 
-            pageTitle: 'Admin Products', 
-            path:'/admin/products',
-            currentPage: page,
-            hasNextPage: ITEMS_PER_PAGE * page < totalItems,
-            hasPreviousPage: page > 1,
-            nextPage: page + 1,
-            previousPage: page - 1,
-            lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
-        });
-    })
-    .catch(err => {
-        const error = new Error(err);
-        error.httpStatusCode = 500;
-        return next(error);
-    }); */
-
-    
-   // Product.find({userId: req.user._id})
-    /* .select('title price -_id')
-    .populate('userId', 'name') */
-    //.then(products => {
-        //console.log(products);
-      /*  res.render('admin/products', {
-            prods: products, 
-            pageTitle: 'Admin Products', 
-            path:'/admin/products'
-        });
-    })
-    .catch(err => {
-        const error = new Error(err);
-        error.httpStatusCode = 500;
-        return next(error);
-    });*/
-//};
-
+// Get all products belonging to the user
 exports.getProducts = (req, res, next) => {
+    // Current page number from query parameter
     const page = +req.query.page || 1;
+    // Total number of products
     let totalItems;
   
+    // Count the total number of products for the user
     Product.find({ userId: req.user._id })
       .countDocuments()
       .then((numProducts) => {
         totalItems = numProducts;
+        // Find products for the current page
         return Product.find({ userId: req.user._id })
+          // Pagination: Skip products based on page number and items per page
           .skip((page - 1) * ITEMS_PER_PAGE)
+          // Pagination: Limit the number of products per page
           .limit(ITEMS_PER_PAGE);
       })
       .then((products) => {
@@ -193,6 +131,7 @@ exports.getProducts = (req, res, next) => {
             Key: product.imageUrl
           };
 
+          // Fetch the image data from S3 for each product
           return s3.send(new GetObjectCommand(params))
             .then(data => {
                 if (data.Body instanceof Readable) {
@@ -217,18 +156,23 @@ exports.getProducts = (req, res, next) => {
                 return product;
             });
         });
+        // Wait for all product promises to resolve
         return Promise.all(productPromises);
       })
       .then((productsWithImages) => {
+        // Render the products view with fetched products and pagination information
         res.render('admin/products', {
           prods: productsWithImages,
           pageTitle: 'My Products',
           path: '/admin/products',
           currentPage: page,
+          // Check if there is a next page
           hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+           // Check if there is a previous page
           hasPreviousPage: page > 1,
           nextPage: page + 1,
           previousPage: page - 1,
+          // Calculate the last page number
           lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
         });
       })
@@ -239,18 +183,26 @@ exports.getProducts = (req, res, next) => {
       });
 };
 
-// Getting information about a product to alter
+// Get information about a product to edit
 exports.getEditProduct = (req, res, next) => {
+    // Check if edit mode is enabled from query parameter
     const editMode = req.query.edit;
+
+    // Redirect to the homepage if edit mode is not enabled
     if(!editMode) {
         return res.redirect('/');
     }
+
+    // Extract the product ID from the request parameters
     const prodId = req.params.productId;
+    // Find the product by its ID
     Product.findById(prodId)
     .then(product => {
         if(!product) {
+            // Redirect to the homepage if the product is not found
             return res.redirect('/');
         }
+        // Render the edit-product view with the product information
         res.render('admin/edit-product', {
             pageTitle: 'Edit Product', 
             path: '/admin/edit-product',
@@ -271,14 +223,21 @@ exports.getEditProduct = (req, res, next) => {
 
 // Editing information about a product
  exports.postEditProduct = (req, res, next) => {
+    // Extract the product ID from the request body
     const prodId = req.body.productId;
+    // Get the updated title from the request body
     const updatedTitle = req.body.title;
+    // Get the updated price from the request body
     const updatedPrice = req.body.price;
+    // Get the updated image from the request file
     const image = req.file;
+    // Get the updated description from the request body
     const updatedDesc = req.body.description;
+    // Validate the request body using the validationResult function
     const errors = validationResult(req);
 
     if(!errors.isEmpty()) {
+       // If there are validation errors, render the edit-product view with the error information
        return res.status(422).render('admin/edit-product', {
             pageTitle: 'Edit Product', 
             path: '/admin/edit-product',
@@ -294,17 +253,22 @@ exports.getEditProduct = (req, res, next) => {
             validationErrors: errors.array()
         });
     }
+
+    // Find the product by its ID
     Product.findById(prodId)
     .then(product => {
         if (product.userId.toString() != req.user._id.toString()) {
+            // If the product doesn't belong to the current user, redirect to the homepage
             return res.redirect('/');
         }
+
+        // Update the product with the new information
         product.title = updatedTitle;
         product.price = updatedPrice;
         product.description = updatedDesc;
         if(image) {
+            // If there is an updated image, handle the file upload and update the imageUrl
             fileHelper.deleteFile(product.imageUrl);
-            //product.imageUrl = image.path;
 
             const fileName = new Date().toISOString().replace(/:/g, '-') + '-' + image.originalname;
             const fileKey = `images/${fileName}`;
@@ -332,7 +296,7 @@ exports.getEditProduct = (req, res, next) => {
                     return next(error);
                 });
         } else {
-            // No new image, save the updated product
+            // If there is no new image, save the updated product
             return product.save();
         }
     })
@@ -349,20 +313,28 @@ exports.getEditProduct = (req, res, next) => {
 
 //Deleting a product
 exports.deleteProduct = (req, res, next) => {
+     // Extract the product ID from the request parameters
     const prodId = req.params.productId;
+     // Find the product by its ID
     Product.findById(prodId)
     .then(product => {
         if(!product) {
+            // If the product is not found, throw an error
             return next(new Error('Product not found.'));
         }
+
+        // Delete the image associated with the product
         fileHelper.deleteFile(product.imageUrl);
+        // Delete the product from the database
         return Product.deleteOne({_id: prodId, userId: req.user._id});
     })
     .then(() => {
         console.log('Destroyed Product');
+        // Respond with a success message
         res.status(200).json({message: 'Success!'});
     })
     .catch(err => {
+        // Respond with an error message
         res.status(500).json({message: 'Deleting product failed.'});
     });
 };

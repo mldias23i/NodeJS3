@@ -1,16 +1,18 @@
 const express = require('express');
 const { check, body } = require('express-validator');
-
 const authController = require('../controllers/auth');
-const router = express.Router();
 const User = require('../models/user');
 
+const router = express.Router();
+
+// Handling GET and POST requests
 router.get('/login', authController.getLogin);
 
 router.get('/signup', authController.getSignup);
 
 router.post('/login',
     [
+        // Validation checks for the email and password fields
         body('email')
             .isEmail()
             .withMessage('Please enter a valid email address.')
@@ -28,14 +30,12 @@ router.post('/login',
 router.post(
     '/signup',
     [ 
+        // Validation checks for the email, password, and confirmPassword fields
         check('email')
             .isEmail()
             .withMessage('Please enter a valid email.')
             .custom((value, {req}) => {
-                /* if(value === 'test@test.com') {
-                    throw new Error('This email address is forbidden.');
-                }
-                return true; */
+                // Custom validation to check if the email already exists in the database
                 return User.findOne({email: value})
                     .then(userDoc => {
                         if(userDoc) {
@@ -54,6 +54,7 @@ router.post(
             body('confirmPassword')
                 .trim()
                 .custom((value, { req }) => {
+                    // Custom validation to check if the confirmPassword matches the password field
                     if(value !== req.body.password) {
                         throw new Error('Passwords have to match!');
                     }
@@ -72,4 +73,5 @@ router.get('/reset/:token', authController.getNewPassword);
 
 router.post('/new-password', authController.postNewPassword);
 
-module.exports = router;
+// Exporting the router module
+module.exports = router; 

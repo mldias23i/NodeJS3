@@ -5,15 +5,25 @@
     <body>
         <%- include('../includes/navigation.ejs') %>
         <main>
+            <!-- Check if there are products in the cart -->
             <% if (products.length > 0) { %>
+                <!-- Create an unordered list to display the cart items -->
                 <ul class="cart__item-list">
+                    <!-- Iterate over each product in the cart -->
                     <% products.forEach(p => { %>
+                        <!-- Create a list item for each product -->
                         <li class="cart__item">
+                            <!-- Display the title of the product -->
                             <h1><%= p.productId.title %></h1>
+                            <!-- Display the quantity of the product -->
                             <h2>Quantity: <%= p.quantity %></h2>
+                            <!-- Create a form to delete the item from the cart -->
                             <form action="/cart-delete-item" method="POST">
+                                <!-- Create a hidden input field for the productId -->
                                 <input type="hidden" value="<%= p.productId._id %>" name="productId">
+                                <!-- Create a hidden input field for the csrfToken -->
                                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <!-- Create a button with the class "btn danger" to submit the form and delete the item -->
                                 <button class="btn danger" type="submit">Delete</button>
                             </form>
                         </li>
@@ -21,13 +31,11 @@
                 </ul>
                 <hr>
                 <div class="centered">
-                    <!-- <form action="/create-order" method="POST">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <button type="submit" class="btn">Order Now!</button>
-                    </form> -->
+                    <!-- Create a button with the class "btn" to proceed to checkout -->
                     <a class="btn" href="/checkout">Order Now!</a>
                 </div>
             <% } else { %>
+                <!-- Display a message when there are no products in the cart -->
                 <h1>No Products in Cart!</h1>
             <% } %>
         </main>

@@ -1,17 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
-
 const PDFDocument = require('pdfkit');
-
 const Product = require('../models/product');
 const Order = require('../models/order');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { Readable } = require('stream');
 
 const ITEMS_PER_PAGE = 4;
-
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
-
-const { Readable } = require('stream');
 
 // Configure AWS S3
 const s3 = new S3Client({
@@ -24,22 +20,27 @@ const s3 = new S3Client({
 
 //Getting a list of all products in database
 exports.getProducts = (req, res, next) => {
+    // Extracts the current page number from the query parameters or defaults to 1 if not provided
     const page = +req.query.page || 1;
+    // Variable to store the total number of products
     let totalItems;
 
+    // Count the total number of products in the database
     Product.find().countDocuments().then(numProducts => {
         totalItems = numProducts;
+        // Retrieve a subset of products based on the current page and the number of items per page
         return Product.find()
         .skip((page - 1) * ITEMS_PER_PAGE)
         .limit(ITEMS_PER_PAGE)
     })
     .then(products => {
+        // Iterate through each product and fetch its corresponding image from AWS S3
         const productPromises = products.map((product) => {
             const params = {
               Bucket: 'nodejsimagestorage',
               Key: product.imageUrl
             };
-            
+            // Fetch the image from S3
             return s3.send(new GetObjectCommand(params))
             .then(data => {
                 if (data.Body instanceof Readable) {
@@ -64,21 +65,23 @@ exports.getProducts = (req, res, next) => {
                 return product;
             });
         });
+        // Wait for all image fetch operations to complete
         return Promise.all(productPromises);
     })
     .then((productsWithImages) => {
-            res.render('shop/product-list', {
-                prods: productsWithImages, 
-                pageTitle: 'Products', 
-                path:'/products',
-                currentPage: page,
-                hasNextPage: ITEMS_PER_PAGE * page < totalItems,
-                hasPreviousPage: page > 1,
-                nextPage: page + 1,
-                previousPage: page - 1,
-                lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
-            });
-        })
+        // Render the product list view with the retrieved products and pagination information
+        res.render('shop/product-list', {
+            prods: productsWithImages, 
+            pageTitle: 'Products', 
+            path:'/products',
+            currentPage: page,
+            hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+            hasPreviousPage: page > 1,
+            nextPage: page + 1,
+            previousPage: page - 1,
+            lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
+        });
+    })
     .catch(err => {
         const error = new Error(err);
         error.httpStatusCode = 500;
@@ -88,9 +91,11 @@ exports.getProducts = (req, res, next) => {
 
 //Getting a product in database
 exports.getProduct = (req, res, next) => {
+    // Extracts the product ID from the request parameters
     const prodId = req.params.productId;
+    // Variable to store the product data
     let productData;
-
+    // Find the product by its ID
     Product.findById(prodId)
         .then(product => {
             productData = product;
@@ -99,7 +104,7 @@ exports.getProduct = (req, res, next) => {
                 Bucket: 'nodejsimagestorage',
                 Key: product.imageUrl
             };
-
+            // Fetch the image from S3
             return s3.send(new GetObjectCommand(params));
         })
         .then(data => {
@@ -121,6 +126,7 @@ exports.getProduct = (req, res, next) => {
             }
         })
         .then(productWithImage => {
+            // Render the product detail view with the retrieved product and its associated image
             res.render('shop/product-detail', {
                 product: productWithImage,
                 pageTitle: productWithImage.title,
@@ -133,62 +139,17 @@ exports.getProduct = (req, res, next) => {
             return next(error);
         });
 };
- /* exports.getProduct = (req, res, next) => {
-    const prodId = req.params.productId;
-    Product.findById(prodId)
-    .then(product => {
-        res.render('shop/product-detail', {
-            product: product,
-            pageTitle: product.title, 
-            path:'/products'
-        });
-    })
-    .catch(err => {
-        const error = new Error(err);
-        error.httpStatusCode = 500;
-        return next(error);
-    });        
- }; */
 
- //Getting a list  of all products in database to first page
- /* exports.getIndex = (req, res, next) => {
-    const page = +req.query.page || 1;
-    let totalItems;
-
-    Product.find().countDocuments().then(numProducts => {
-        totalItems = numProducts;
-        return Product.find()
-        .skip((page - 1) * ITEMS_PER_PAGE)
-        .limit(ITEMS_PER_PAGE)
-    })
-    .then(products => {
-        res.render('shop/index', {
-            prods: products, 
-            pageTitle: 'About', 
-            path:'/',
-            currentPage: page,
-            hasNextPage: ITEMS_PER_PAGE * page < totalItems,
-            hasPreviousPage: page > 1,
-            nextPage: page + 1,
-            previousPage: page - 1,
-            lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)
-        });
-    })
-    .catch(err => {
-        const error = new Error(err);
-        error.httpStatusCode = 500;
-        return next(error);
-    });
- }; */
-
- exports.getIndex = (req, res, next) => {
-    const imageUrl = 'images/MiguelDiasCV.jpg';
+// Get the index page with image data from S3
+exports.getIndex = (req, res, next) => {
+    const imageUrl = 'images/MiguelDiasCV.jpg'; // Specify the image URL
   
     const params = {
       Bucket: 'nodejsimagestorage',
       Key: imageUrl
     };
 
+    // Create a new GetObjectCommand
     const getCommand = new GetObjectCommand(params);
 
     s3.send(getCommand)
@@ -200,6 +161,7 @@ exports.getProduct = (req, res, next) => {
           const imageBuffer = Buffer.concat(chunks);
           const base64Image = imageBuffer.toString('base64');
 
+          // Render the index view with the retrieved image data
           res.render('shop/index', {
             pageTitle: 'About',
             path: '/',
@@ -217,10 +179,13 @@ exports.getProduct = (req, res, next) => {
     });
 };
 
- exports.getCart = (req, res, next) => {
+// Fetches the user's cart and renders the cart page
+exports.getCart = (req, res, next) => {
     req.user
+    // Populate the product details in the cart
     .populate('cart.items.productId')
     .then(user => {
+        // Get the products in the cart
         const products = user.cart.items;
         res.render('shop/cart', {
             pageTitle: 'Your Cart', 
@@ -233,88 +198,19 @@ exports.getProduct = (req, res, next) => {
         error.httpStatusCode = 500;
         return next(error);
     })
-
- //Getting products in cart without mongoose
-/* exports.getCart = (req, res, next) => {
-    req.user.getCart().then(products => {
-        res.render('shop/cart', {
-            pageTitle: 'Your Cart', 
-            path:'/cart',
-            products: products
-        });
-    })
-    .catch(err => {
-        console.log(err);
-    }) */
-
-    // Without Sequelize
-    /* Cart.getCart(cart => {
-        Product.fetchAll(products => {
-            const cartProducts = [];
-            for (product of products) {
-                const cartProductData = cart.products.find(prod => prod.id === product.id);
-                if(cartProductData) {
-                    cartProducts.push({productData : product, qty: cartProductData.qty});
-                }
-            }
-            res.render('shop/cart', {
-                pageTitle: 'Your Cart', 
-                path:'/cart',
-                products: cartProducts
-            });
-        });     
-    }); */
- };
-
- //Adding products to cart
+};
+ 
+ // Adds products to the user's cart
  exports.postCart = (req, res, next) => {
+    // Get the product ID from the request body
     const prodId = req.body.productId;
+    // Find the product by ID
     Product.findById(prodId).then(product => {
+        // Add the product to the user's cart
         return req.user.addToCart(product);
     }).then(result => {
         console.log(result);
-        res.redirect('/cart');
-    });
-    //Without mongoDB
-    /* let fetchedCart;
-    let newQuantity = 1;
-    req.user.getCart().then(cart => {
-        fetchedCart = cart;
-        return cart.getProducts({ where: { id: prodId } });
-      })
-      .then(products => {
-        let product;
-        if (products.length > 0) {
-          product = products[0];
-        }
-        if (product) {
-          const oldQuantity = product.cartItem.quantity;
-          newQuantity = oldQuantity + 1;
-          return product;
-        }
-        return Product.findByPk(prodId);
-    }).then(product => {
-        return fetchedCart.addProduct(product, {
-            through: { quantity: newQuantity }
-        });
-    }).then(() => {
-        res.redirect('/cart');
-    }).catch(err => console.log(err)); */
-
-    //without Sequelize
-    /* 
-    Product.findById(prodId, (product) => {
-        Cart.addProduct(prodId, product.price);
-    });
-    res.redirect('/cart'); */
-};
-
-//Deleting product from cart
-exports.postCartDeleteProduct = (req, res, next) => {
-    const prodId = req.body.productId;
-    req.user
-    .removeFromCart(prodId)
-    .then(result => {
+        // Redirect the user to the cart page
         res.redirect('/cart');
     })
     .catch(err => {
@@ -324,27 +220,44 @@ exports.postCartDeleteProduct = (req, res, next) => {
     });
 };
 
+// Deletes a product from the user's cart
+exports.postCartDeleteProduct = (req, res, next) => {
+    // Get the product ID from the request body
+    const prodId = req.body.productId;
+    req.user
+    // Remove the product from the user's cart  
+    .removeFromCart(prodId)
+    .then(result => {
+        // Redirect the user to the cart page
+        res.redirect('/cart');
+    })
+    .catch(err => {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+    });
+};
+
+// Renders the checkout page with the user's cart products and creates a Stripe checkout session
 exports.getCheckout = (req, res, next) => {
     let products;
     let total = 0;
     req.user
     .populate('cart.items.productId')
     .then(user => {
+        // Get the products from the user's cart
         products = user.cart.items;
         total = 0;
         products.forEach(p => {
+            // Calculate the total price of all products in the cart
             total += p.quantity * p.productId.price;
         });
-
+        // Create a Stripe checkout session
         return stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: "payment",
             line_items: products.map((p) => {
                 return {
-                    /* name: p.productId.title,
-                    description: p.productId.description,
-                    amount: Math.round(p.productId.price.toFixed(2)*100),
-                    currency: 'usd', */
                     quantity: p.quantity,
                     price_data: {
                         currency: "usd",
@@ -357,11 +270,14 @@ exports.getCheckout = (req, res, next) => {
                 };
             }),
             customer_email: req.user.email,
-            success_url: req.protocol + '://' + req.get('host') + '/checkout/success', // => http://localhost:3000
+            // Success URL for redirecting after successful payment
+            success_url: req.protocol + '://' + req.get('host') + '/checkout/success',
+            // Cancel URL for redirecting if the payment is canceled
             cancel_url: req.protocol + '://' + req.get('host') + '/checkout/cancel'
         });
     })
     .then(session => {
+        // Render the checkout page with the necessary data
         res.render('shop/checkout', {
             pageTitle: 'Checkout', 
             path:'/checkout',
@@ -378,14 +294,16 @@ exports.getCheckout = (req, res, next) => {
 
 };
 
-//Adding order to orders page
+// Handles the successful payment redirect
  exports.getCheckoutSuccess = (req, res, next) => {
     req.user
     .populate('cart.items.productId')
     .then(user => {
+        // Retrieve products from the cart and format them for the order
         const products = user.cart.items.map(i => {
             return {quantity: i.quantity, product:  {...i.productId._doc } };
         }); 
+        // Create a new order with the user and products
         const order = new Order({
             user: {
                 email: req.user.email,
@@ -393,44 +311,26 @@ exports.getCheckout = (req, res, next) => {
             },
             products: products
         });
+        // Save the order to the database
         return order.save();
     })
     .then(result => {
+        // Clear the cart after successful order creation
         return req.user.clearCart();
     })
     .then(() => {
+        // Redirect to the orders page
         res.redirect('/orders');
     })
     .catch(err => {
+        // Handle errors and pass them to the error handling middleware
         const error = new Error(err);
         error.httpStatusCode = 500;
         return next(error);
     });
 };
-    // with sequelize
-    /* req.user.getCart().then(cart => {
-        fetchedCart = cart;
-        return cart.getProducts();
-    }).then(products => {
-        return req.user.createOrder().then(order => {
-           return order.addProducts(products.map(product => {
-                product.orderItem = {quantity: product.cartItem.quantity};
-                return product;
-            }));
-        })
-        .catch(err => {
-            console.log(err);
-        });
-    }).then(result => {
-        return fetchedCart.setProducts(null);
-    }).then(result => {
-        res.redirect('/orders');
-    })
-    .catch(err => {
-        console.log(err);
-    });*/
 
-//Getting orders on database to show in page orders
+// Retrieves orders from the database to display on the orders page
  exports.getOrders = (req, res, next) => {
     Order.find({'user.userId': req.user._id })
     .then(orders => {
@@ -441,31 +341,37 @@ exports.getCheckout = (req, res, next) => {
         });
     })
     .catch(err => {
+        // Handle errors and pass them to the error handling middleware
         const error = new Error(err);
         error.httpStatusCode = 500;
         return next(error);
     }); 
  };
 
+ // Generates and serves an invoice PDF for a specific order
  exports.getInvoice = (req, res, next) => {
     const orderId = req.params.orderId;
     Order.findById(orderId)
     .then(order => {
+        // Check if the order exists
         if(!order) {
             return next(new Error('No error found.'));
         }
+        // Check if the order belongs to the logged-in user
         if(order.user.userId.toString() !== req.user._id.toString()) {
             return next(new Error('Unauthorized'));
         }
+        
+        // Generate the invoice PDF
         const invoiceName = 'invoice-' + orderId + '.pdf';
         const invoicePath = path.join('data', 'invoices', invoiceName);
-
         const pdfDoc = new PDFDocument();
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
         pdfDoc.pipe(fs.createWriteStream(invoicePath));
         pdfDoc.pipe(res);
 
+        // Add content to the PDF
         pdfDoc.fontSize(26).text('Invoice', {
             underline: true
         });
@@ -487,22 +393,10 @@ exports.getCheckout = (req, res, next) => {
         });
         pdfDoc.text('-------');
         pdfDoc.fontSize(20).text('Total Price: $' + totalPrice);
-
         pdfDoc.end();
-        /* fs.readFile(invoicePath, (err, data) => {
-            if(err) {
-                return next(err);
-            }
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
-            res.send(data);
-            res.end();
-        }); */
-        /* const file = fs.createReadStream(invoicePath);
-        
-        file.pipe(res); */
     })
     .catch(err => {
+        // Handle errors and pass them to the error handling middleware
         next(err);
     })
  };

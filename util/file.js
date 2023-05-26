@@ -1,15 +1,3 @@
-/* const fs = require('fs');
-
-const deleteFile = (filePath) => {
-    fs.unlink(filePath, (err) => {
-        if(err) {
-            throw (err);
-        }
-    });
-}
-
-exports.deleteFile = deleteFile; */
-
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 const s3 = new S3Client({
@@ -20,6 +8,7 @@ const s3 = new S3Client({
     }
 });
 
+// Deletes a file from the specified S3 bucket
 const deleteFile = (filePath) => {
     const bucketName = 'nodejsimagestorage';
     const fileKey = filePath;

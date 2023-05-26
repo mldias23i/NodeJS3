@@ -6,35 +6,50 @@
         <%- include('../includes/navigation.ejs') %>
 
             <main>
+                <!-- Check if there are products available -->
                 <% if (prods.length > 0) { %>
+                    <!-- Create a grid layout for the products -->
                     <div class="grid">
+                        <!-- Iterate over each product -->
                         <% for (let product of prods) { %>
+                            <!-- Create a card element for the product item -->
                             <article class="card product-item">
                                 <header class="card__header">
+                                    <!-- Display the title of the product -->
                                     <h1 class="product__title">
                                         <%= product.title %>
                                     </h1>
                                 </header>
+                                <!-- Create a container for the product image -->
                                 <div class="card__image">
+                                    <!-- Display the product image with its base64-encoded URL and alt text -->
                                     <img src="data:image/jpg;base64,<%= product.base64ImageUrl %>" alt="<%= product.title %>">
                                 </div>
+                                <!-- Create a content section for the card -->
                                 <div class="card__content">
+                                    <!-- Display the price of the product -->
                                     <h2 class="product__price">$
                                         <%= product.price %>
                                     </h2>
+                                    <!-- Display the description of the product -->
                                     <p class="product__description">
                                         <%= product.description %>
                                     </p>
                                 </div>
+                                <!-- Create a section for card actions -->
                                 <div class="card__actions">
+                                    <!-- Display a link to view the details of the product -->
                                     <a href="/products/<%- product._id %>" class="btn">Details</a>
+                                     <!-- Check if the user is authenticated -->
                                     <% if (isAuthenticated) { %>
+                                        <!-- Include the add-to-cart.ejs file and pass the product data to it -->
                                         <%- include('../includes/add-to-cart.ejs', {product: product}) %>
                                     <% } %>
                                 </div>
                             </article>
                             <% } %>
                     </div>
+                    <!-- Include the pagination.ejs file and pass pagination data to it -->
                     <%- include('../includes/pagination.ejs', {
                         currentPage: currentPage, 
                         nextPage: nextPage, 

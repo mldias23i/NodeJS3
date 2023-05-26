@@ -7,15 +7,20 @@
    <%- include('../includes/navigation.ejs') %>
 
     <main>
+        <!-- If there is an error message, display it in a user message with the "user-message--error" class -->
         <% if (errorMessage) { %>
             <div class="user-message user-message--error"><%= errorMessage %></div>
         <% } %>
+        <!-- Create a form with the class "login-form" and set the action and method -->
         <form class="login-form" action="/reset" method="POST">
             <div class="form-control">
                 <label for="email">E-mail</label>
+                <!-- Create an input field for the email with the name "email" and id "email" -->
                 <input type="email" name="email" id="email">
             </div>
+            <!-- Create a hidden input field for the csrfToken with the value "<%= csrfToken %>" -->
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <!-- Create a button with the class "btn" and type "submit" to submit the form -->
             <button class="btn" type="submit">Reset Password</button>
         </form>
     </main>

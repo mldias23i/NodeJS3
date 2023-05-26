@@ -6,35 +6,50 @@
         <%- include('../includes/navigation.ejs') %>
 
             <main>
+                <!-- Check if there are products available -->
                 <% if (prods.length > 0) { %>
+                    <!-- Create a grid layout for displaying products -->
                     <div class="grid">
+                        <!-- Iterate over each product -->
                         <% for (let product of prods) { %>
                             <article class="card product-item">
                                 <header class="card__header">
+                                    <!-- Display the product title -->
                                     <h1 class="product__title">
                                         <%= product.title %>
                                     </h1>
                                 </header>
+                                <!-- Display the product image using base64 encoded data -->
                                 <div class="card__image">
                                     <img src="data:image/jpg;base64,<%= product.base64ImageUrl %>" alt="<%= product.title %>">
                                 </div>
+                                <!-- Display the product price -->
                                 <div class="card__content">
                                     <h2 class="product__price">$
                                         <%= product.price %>
                                     </h2>
+                                    <!-- Display the product description -->
                                     <p class="product__description">
                                         <%= product.description %>
                                     </p>
                                 </div>
                                 <div class="card__actions">
+                                    <!-- Create a link to edit the product -->
                                     <a href="/admin/edit-product/<%= product._id %>?edit=true" class="btn">Edit</a>
+                                    <!-- Store the product ID as a hidden input field -->
                                     <input type="hidden" value="<%= product._id %>" name="productId">
+                                    <!-- Store the CSRF token as a hidden input field -->
                                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <!-- Create a button to delete the product -->
                                     <button class="btn" type="button" onclick="deleteProduct(this)">Delete</button>
                                 </div>
                             </article>
+                            <!-- End of product iteration -->
                             <% } %>
+                    <!-- End of grid layout -->
                     </div>
+
+                    <!-- Include the pagination.ejs file with the specified data -->
                     <%- include('../includes/pagination.ejs', {
                         currentPage: currentPage, 
                         nextPage: nextPage, 
@@ -43,9 +58,12 @@
                         hasNextPage: hasNextPage, 
                         hasPreviousPage: hasPreviousPage
                     }) %>
+                    <!-- If no products are found -->
                     <% } else { %>
                         <h1>No Products Found!</h1>
-                        <% } %>
+                    <!-- End of products condition -->
+                    <% } %>
             </main>
             <%- include('../includes/end.ejs') %>
+             <!-- Include the admin.js file for additional JavaScript functionality -->
             <script src="/js/admin.js"></script>

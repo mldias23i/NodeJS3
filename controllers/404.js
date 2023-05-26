@@ -1,3 +1,4 @@
+// Render the 404 error page
 exports.get404 = (req, res, next) => {
     res.status(404).render('error404', {
         pageTitle: 'Page Not Found', 
@@ -6,6 +7,7 @@ exports.get404 = (req, res, next) => {
     });
 };
 
+// Render the 500 error page
 exports.get500 = (req, res, next) => {
     res.status(500).render('error500', {
         pageTitle: 'Error!', 

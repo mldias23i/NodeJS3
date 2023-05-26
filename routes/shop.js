@@ -1,11 +1,11 @@
-const path = require('path');
-
 const express = require('express');
-
 const shopController = require('../controllers/shop');
 const isAuth = require('../middleware/is-auth');
+
+// Creating an instance of the Express Router
 const router = express.Router();
 
+// Handling GET and POST requests, some with authentication
 router.get('/', shopController.getIndex);
 
 router.get('/products', shopController.getProducts);
@@ -28,4 +28,5 @@ router.get('/orders', isAuth, shopController.getOrders);
 
 router.get('/orders/:orderId', isAuth, shopController.getInvoice);
 
+ // Exporting the router module
 module.exports = router;
