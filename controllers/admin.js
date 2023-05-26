@@ -6,7 +6,7 @@ const { validationResult } = require('express-validator');
 
 const Product = require('../models/product');
 
-const ITEMS_PER_PAGE = 2;
+const ITEMS_PER_PAGE = 4;
 
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 
@@ -222,7 +222,7 @@ exports.getProducts = (req, res, next) => {
       .then((productsWithImages) => {
         res.render('admin/products', {
           prods: productsWithImages,
-          pageTitle: 'Admin Products',
+          pageTitle: 'My Products',
           path: '/admin/products',
           currentPage: page,
           hasNextPage: ITEMS_PER_PAGE * page < totalItems,

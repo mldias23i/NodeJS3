@@ -1,45 +1,52 @@
 <%- include('../includes/head.ejs') %>
-    <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/profile.css">
+    
 </head>
 
 <body>
     <%- include('../includes/navigation.ejs') %>
-
-    <main>
-        <% if (prods.length > 0) { %>
-            <div class="grid">
-                <% for (let product of prods) { %>
-                    <article class="card product-item">
-                        <header class="card__header">
-                            <h1 class="product__title"><%= product.title %></h1>
-                        </header>
-                        <div class="card__image">
-                            <img src="/<%= product.imageUrl %>"
-                                alt="<%= product.title %>">
-                        </div>
-                        <div class="card__content">
-                            <h2 class="product__price">$<%= product.price %></h2>
-                            <p class="product__description"><%= product.description %></p>
-                        </div>
-                        <div class="card__actions">
-                            <a href="/products/<%- product._id %>" class="btn">Details</a>
-                            <% if (isAuthenticated) { %>
-                                <%- include('../includes/add-to-cart.ejs', {product: product}) %>
-                            <% } %>
-                        </div>
-                    </article>
-                <% } %>
+    <section class="website__info">
+        <div>
+            <h2>Welcome to My Website!</h2>
+            <p>Thank you for visiting my website, which I developed to enhance my skills in Node.js.</p>
+            <p><strong>About:</strong></p>
+            <p>In the "About" section, you will find information about this website and get to know more about me.</p>
+            <p><strong>Navigation:</strong></p>
+            <p>You can explore various tabs:</p>
+            <ul>
+              <li>"Products" tab: Discover a wide range of products added by users, available for purchase.</li>
+              <li>"Signup" tab: Create your account by providing your details to access additional features.</li>
+              <li>"Cart" tab: Review and manage the products you wish to buy.</li>
+              <li>"Orders" tab: Track your order history, view invoices, and manage your purchases.</li>
+              <li>"Add Product" tab: Share details about a product you want to sell on the platform.</li>
+              <li>"My Products" tab: See all the products you have added to the website.</li>
+            </ul>
+            <p><strong>Note:</strong> This website is for demonstration purposes only and does not facilitate actual purchases.</p>
+        </div>
+    </section>
+    <section>
+        <div class="container">
+            <div class="card profile-item">
+                <!-- Display the image -->
+                <div class="image-container">
+                    <img src="<%= imageUrl %>" width="225" height="225">
+                </div>
+                <div class="text-container">
+                    <p class="text__nome">Miguel Dias</p>
+                    <p>Software Developer</p>
+                    <button class="download-button" onclick="window.open('https://nodejsimagestorage.s3.eu-west-3.amazonaws.com/CVMiguelDias.pdf', '_blank')">Download CV</button>
+                </div>
             </div>
-            <%- include('../includes/pagination.ejs', {
-                currentPage: currentPage, 
-                nextPage: nextPage, 
-                previousPage:previousPage, 
-                lastPage:lastPage, 
-                hasNextPage: hasNextPage, 
-                hasPreviousPage: hasPreviousPage
-            }) %>
-        <% } else { %>
-            <h1>No Products Found!</h1>
-        <% } %>
-    </main>
+            <div class="card profile-item">
+                <div class="text-container with-details">
+                    <p><strong>Address: </strong><span>Póvoa de Varzim, Portugal</span></p>
+                    <p><strong>Email: </strong><span><a href="mailto:mldias23i@gmail.com">mldias23i@gmail.com</a></span></p>
+                    <p><strong>Tel: </strong><span>+351 917496071</span></p>
+                    <p><strong>Date of Birth: </strong><span>June 19th, 1996</span></p>
+                    <p><strong>Nationality: </strong><span>Portuguese</span></p>
+                    <p><strong>LinkedIn: </strong><span><a href="https://www.linkedin.com/in/mldias23/">pt.linkedin.com/in/mldias23/</a></span></p>
+                </div>
+            </div>
+        </div>
+    </section>
 <%- include('../includes/end.ejs') %>

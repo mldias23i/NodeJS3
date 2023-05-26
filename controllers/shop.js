@@ -7,7 +7,7 @@ const PDFDocument = require('pdfkit');
 const Product = require('../models/product');
 const Order = require('../models/order');
 
-const ITEMS_PER_PAGE = 2;
+const ITEMS_PER_PAGE = 4;
 
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 
@@ -39,7 +39,7 @@ exports.getProducts = (req, res, next) => {
               Bucket: 'nodejsimagestorage',
               Key: product.imageUrl
             };
-  
+            
             return s3.send(new GetObjectCommand(params))
             .then(data => {
                 if (data.Body instanceof Readable) {
@@ -151,7 +151,7 @@ exports.getProduct = (req, res, next) => {
  }; */
 
  //Getting a list  of all products in database to first page
- exports.getIndex = (req, res, next) => {
+ /* exports.getIndex = (req, res, next) => {
     const page = +req.query.page || 1;
     let totalItems;
 
@@ -164,7 +164,7 @@ exports.getProduct = (req, res, next) => {
     .then(products => {
         res.render('shop/index', {
             prods: products, 
-            pageTitle: 'Shop', 
+            pageTitle: 'About', 
             path:'/',
             currentPage: page,
             hasNextPage: ITEMS_PER_PAGE * page < totalItems,
@@ -179,8 +179,43 @@ exports.getProduct = (req, res, next) => {
         error.httpStatusCode = 500;
         return next(error);
     });
- };
+ }; */
 
+ exports.getIndex = (req, res, next) => {
+    const imageUrl = 'images/MiguelDiasCV.jpg';
+  
+    const params = {
+      Bucket: 'nodejsimagestorage',
+      Key: imageUrl
+    };
+
+    const getCommand = new GetObjectCommand(params);
+
+    s3.send(getCommand)
+    .then(data => {
+      if (data.Body instanceof Readable) {
+        const chunks = [];
+        data.Body.on('data', (chunk) => chunks.push(chunk));
+        data.Body.on('end', () => {
+          const imageBuffer = Buffer.concat(chunks);
+          const base64Image = imageBuffer.toString('base64');
+
+          res.render('shop/index', {
+            pageTitle: 'About',
+            path: '/',
+            imageUrl: 'data:image/jpeg;base64,' + base64Image
+          });
+        });
+      } else {
+        console.log('Invalid image data');
+        return res.status(500).send('Invalid image data');
+      }
+    })
+    .catch(err => {
+      console.log('Error fetching image from S3:', err);
+      return res.status(500).send('Error fetching image from S3');
+    });
+};
 
  exports.getCart = (req, res, next) => {
     req.user
