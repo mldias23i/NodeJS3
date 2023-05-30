@@ -1,7 +1,7 @@
 const fileHelper = require('../util/file');
 const { validationResult } = require('express-validator');
 const Product = require('../models/product');
-const ITEMS_PER_PAGE = 4;
+const ITEMS_PER_PAGE = 3;
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const { Readable } = require('stream');

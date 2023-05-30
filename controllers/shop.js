@@ -7,7 +7,7 @@ const Order = require('../models/order');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { Readable } = require('stream');
 
-const ITEMS_PER_PAGE = 4;
+const ITEMS_PER_PAGE = 3;
 
 // Configure AWS S3
 const s3 = new S3Client({
