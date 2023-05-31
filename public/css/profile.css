@@ -46,6 +46,13 @@
   margin-left: 5em;
 }
 
+.background-element {
+  background-image: url('https://nodejsimagestorage.s3.eu-west-3.amazonaws.com/images/WallpaperNodeJS2.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
 .container {
     display: flex;
     justify-content: space-around;

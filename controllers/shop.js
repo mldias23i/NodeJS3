@@ -372,16 +372,49 @@ exports.getCheckout = (req, res, next) => {
         pdfDoc.pipe(res);
 
         // Add content to the PDF
-        pdfDoc.fontSize(26).text('Invoice', {
-            underline: true
+        pdfDoc.font('Helvetica-Bold').fontSize(32).text('Invoice', {
+            underline: true,
+            align: 'center',
+            bold: true
         });
 
-        pdfDoc.text('-----------------');
+        pdfDoc.text('-----------------', {
+            align: 'center'
+        });
+
+        // Add header section
+        pdfDoc.font('Helvetica')
+        .fontSize(12)
+        .text('JustForFun', { align: 'center' })
+        .moveDown(0.5)
+        .text('123 Main Street, Porto, Portugal', { align: 'center' })
+        .moveDown(0.5)
+        .text('Phone: (+351) 917496071', { align: 'center' })
+        .moveDown(0.5)
+        .text('Email: mldias23i@gmail.com', { align: 'center' })
+        .moveDown(0.5); // Add line spacing after the last line of text
+
+        const lineY = pdfDoc.y + 10; // Set the y-coordinate of the line
+        pdfDoc.moveTo(50, lineY) // Start position of the line
+        .lineTo(pdfDoc.page.width - 50, lineY) // End position of the line
+        .stroke(); // Draw the line
+
+        // Add billing information
+        pdfDoc.moveDown(2);
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Bill To:');
+        pdfDoc.font('Helvetica').text(order.user.email);
+
+        // Add order details
+        pdfDoc.moveDown(0.9);
+        pdfDoc.font('Helvetica-Bold').fontSize(12).text('Order Details:');
+        pdfDoc.font('Helvetica').text('Order ID: ' + order._id);
+        pdfDoc.moveDown(5);
+
         let totalPrice = 0;
         order.products.forEach(prod => {
             totalPrice += prod.quantity * prod.product.price;
             pdfDoc
-            .fontSize(14)
+            .fontSize(12)
             .text(
                 prod.product.title + 
                 ' - ' + 
@@ -391,8 +424,13 @@ exports.getCheckout = (req, res, next) => {
                 prod.product.price
             );
         });
-        pdfDoc.text('-------');
-        pdfDoc.fontSize(20).text('Total Price: $' + totalPrice);
+        pdfDoc.moveDown(1.2);
+        const lineW = pdfDoc.y + 10; // Set the y-coordinate of the line
+        pdfDoc.moveTo(50, lineW) // Start position of the line
+        .lineTo(pdfDoc.page.width - 50, lineW) // End position of the line
+        .stroke(); // Draw the line
+        pdfDoc.moveDown(2);
+        pdfDoc.fontSize(16).text('Total Price: $' + totalPrice, { align: 'right' });
         pdfDoc.end();
     })
     .catch(err => {
